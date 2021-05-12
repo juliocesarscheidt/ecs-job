@@ -11,5 +11,7 @@ module "ecs_job" {
   task_subnet_ids          = aws_subnet.private_subnet.*.id
   task_security_group_ids  = [aws_security_group.task-sg.id]
   task_assign_public_ip    = false
+  execution_role_arn       = aws_iam_role.execution-role.arn
+  task_role_arn            = aws_iam_role.task-role.arn
   tags                     = var.tags
 }

@@ -84,6 +84,16 @@ variable "task_assign_public_ip" {
   default     = true
 }
 
+variable "execution_role_arn" {
+  description = "ARN of the execution role"
+  type        = string
+}
+
+variable "task_role_arn" {
+  description = "ARN of the task role"
+  type        = string
+}
+
 variable "tags" {
   type        = map(string)
   description = "Additional tags (_e.g._ { BusinessUnit : ABC })"

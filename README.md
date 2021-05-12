@@ -17,7 +17,7 @@ export TASK_SCHEDULE_EXPRESSION="cron(0/5 * * * ? *)"
 # login into the ECR, build the image, creates the repository (if doesn't exist) and pushes the image to the repository
 make push-image
 
-# create the backend bucket on S3 (if doesn't exist), initializes the terraform, create the workspaces, validate and do the plan
+# create the backend bucket on S3 (if doesn't exist, this could take a few minutes), initializes the terraform, create the workspaces, validate and do the plan
 make init
 
 # apply the previous plan

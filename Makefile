@@ -1,7 +1,6 @@
 #!make
 
-PLAN_FILE?=tfplan
-ECS_CLUSTER_NAME?=ecs-job-cluster
+TERRAFORM_PATH?="./terraform"
 
 docker-login:
 	-@echo "Docker login"
@@ -11,6 +10,10 @@ docker-login:
 docker-build-image:
 	-@echo "Building the image"
 	docker image build --tag $(DOCKER_REGISTRY)/$(TASK_NAME):$(TASK_IMAGE_TAG) ./application
+
+docker-container-run:
+	-@echo "Running the container"
+	docker container run --rm --name $(TASK_NAME) $(DOCKER_REGISTRY)/$(TASK_NAME):$(TASK_IMAGE_TAG)
 
 docker-create-repository:
 	-@echo "Create repository"
@@ -24,51 +27,22 @@ push-image: docker-login docker-build-image docker-create-repository
 create-bucket:
 	-@echo "Creating the bucket"
 	aws s3 ls s3://$(AWS_BACKEND_BUCKET) --region $(AWS_DEFAULT_REGION) || \
-		aws s3 mb s3://$(AWS_BACKEND_BUCKET) --region $(AWS_DEFAULT_REGION)
+		aws s3 mb s3://$(AWS_BACKEND_BUCKET) --region $(AWS_DEFAULT_REGION) --acl private
 
 init: create-bucket
-	-@echo "Init"
-	terraform init -upgrade=true \
-		-backend-config="bucket=$(AWS_BACKEND_BUCKET)" \
-		-backend-config="key=state.tfstate" \
-		-backend-config="region=$(AWS_DEFAULT_REGION)" \
-		-backend-config="workspace_key_prefix=terraform/$(ECS_CLUSTER_NAME)" \
-		-backend-config="access_key=$(AWS_ACCESS_KEY_ID)" \
-		-backend-config="secret_key=$(AWS_SECRET_ACCESS_KEY)" \
-		-backend-config="encrypt=true"
-
-	-@terraform workspace new development 2> /dev/null
-	-@terraform workspace new production 2> /dev/null
-	terraform workspace select $(ENV)
-
-	make plan
+	$(MAKE) -C $(TERRAFORM_PATH) init
 
 fmt:
-	terraform fmt -write=true -recursive
+	$(MAKE) -C $(TERRAFORM_PATH) fmt
 
 validate:
-	terraform validate
+	$(MAKE) -C $(TERRAFORM_PATH) validate
 
-plan: validate
-	-@echo "Plan"
-	terraform plan \
-		-out=$(PLAN_FILE) \
-		-var-file=$(ENV).tfvars \
-		-var aws_region="$(AWS_DEFAULT_REGION)" \
-		-var ecs_cluster_name="$(ECS_CLUSTER_NAME)" \
-		-var docker_registry="$(DOCKER_REGISTRY)" \
-		-var task_name="$(TASK_NAME)" \
-		-var task_image_tag="$(TASK_IMAGE_TAG)" \
-		-var task_schedule_expression="$(TASK_SCHEDULE_EXPRESSION)" \
-		-input=false
+plan:
+	$(MAKE) -C $(TERRAFORM_PATH) plan
 
-apply: plan
-	-@echo "Apply"
-	terraform apply $(PLAN_FILE)
-	terraform output -json
+apply:
+	$(MAKE) -C $(TERRAFORM_PATH) apply
 
 destroy:
-	-@echo "Destroy"
-	terraform destroy \
-		-var-file=$(ENV).tfvars \
-		-auto-approve
+	$(MAKE) -C $(TERRAFORM_PATH) destroy

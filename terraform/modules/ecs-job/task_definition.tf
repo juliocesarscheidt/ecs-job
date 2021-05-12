@@ -1,7 +1,9 @@
 resource "aws_ecs_task_definition" "task-definition" {
-  family             = var.task_name
-  task_role_arn      = aws_iam_role.task-role.arn
-  execution_role_arn = aws_iam_role.execution-role.arn
+  family = var.task_name
+  # role for task execution, which will be used to pull the image, create log stream, start the task, etc
+  execution_role_arn = var.execution_role_arn
+  # role for task application, to be used by the application itself in execution time, it's optional
+  task_role_arn = var.task_role_arn
   container_definitions = jsonencode([
     {
       name : var.task_name
@@ -34,7 +36,6 @@ resource "aws_ecs_task_definition" "task-definition" {
     "Name" = var.task_name
   })
   depends_on = [
-    aws_iam_role.task-role,
     aws_cloudwatch_log_group.scheduled-task-log-group
   ]
 }
